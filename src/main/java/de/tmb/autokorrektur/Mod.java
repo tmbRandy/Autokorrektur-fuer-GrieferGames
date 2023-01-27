@@ -1,24 +1,28 @@
 package de.tmb.autokorrektur;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.InterModComms;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
+import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
+import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@net.minecraftforge.fml.common.Mod(modid = Mod.MODID, name = Mod.NAME, version = Mod.VERSION)
+// The value here should match an entry in the META-INF/mods.toml file
+@net.minecraftforge.fml.common.Mod("autokorrektur")
 public class Mod
 {
-
-    public static final String MODID = "autokorrektur";
-    public static final String NAME = "Autokorrektur für GrieferGamers";
-    public static final String VERSION = "1.12.2-1.0";
-
     private final Map<String, String> replacements = new HashMap<String, String>() {
         {
             put("7r", "/r");
@@ -82,10 +86,27 @@ public class Mod
         }
     };
 
+    // Directly reference a log4j logger.
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    public Mod() {
+        // Register the setup method for modloading
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+        // Register the enqueueIMC method for modloading
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::enqueueIMC);
+        // Register the processIMC method for modloading
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
+        // Register the doClientStuff method for modloading
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::doClientStuff);
+
+        // Register ourselves for server and other game events we are interested in
+        MinecraftForge.EVENT_BUS.register(this);
+    }
+
+
+
     @SubscribeEvent
     public void clientChatEvent(ClientChatEvent e) {
-
-     if (!Minecraft.getMinecraft().player.isServerWorld()) return;
 
         String message = e.getMessage();
 
@@ -100,7 +121,7 @@ public class Mod
 
 
             for (int i = 0; i < messageArray.length; i++) {
-                Minecraft.getMinecraft().currentScreen.sendChatMessage(messageArray[i]);
+                Minecraft.getInstance().screen.sendMessage(messageArray[i]);
             }
 
             message = "";
@@ -119,11 +140,33 @@ public class Mod
         }
     }
 
-    @EventHandler
-    public void preInit(FMLPreInitializationEvent event)
-    {
-        MinecraftForge.EVENT_BUS.register(Mod.this);
+    private void setup(final FMLCommonSetupEvent event)
+    { }
+
+    private void doClientStuff(final FMLClientSetupEvent event) {
+
     }
 
+    private void enqueueIMC(final InterModEnqueueEvent event)
+    {
+        InterModComms.sendTo("autokorrektur", "helloworld", () -> { LOGGER.info("Hello world from the MDK"); return "Hello world";});
+    }
 
+    private void processIMC(final InterModProcessEvent event)
+    {
+
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(FMLServerStartingEvent event) {
+
+    }
+
+    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(bus= net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD)
+    public static class RegistryEvents {
+        @SubscribeEvent
+        public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
+
+        }
+    }
 }
